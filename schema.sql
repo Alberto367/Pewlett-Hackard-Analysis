@@ -97,3 +97,140 @@ WHERE (birth_date BETWEEN '1952-01-01' AND '1955-12-31')
 AND (hire_date BETWEEN '1985-01-01' AND '1988-12-31');
 
 SELECT * FROM retirement_info;
+
+SELECT departments.dept_name,
+     dept_manager.emp_no,
+     dept_manager.from_date,
+     dept_manager.to_date
+FROM departments
+INNER JOIN dept_manager
+ON departments.dept_no = dept_manager.dept_no;
+
+-- choose which columns to merge 
+SELECT retirement_info.emp_no,
+    retirement_info.first_name,
+retirement_info.last_name,
+    dept_emp.to_date
+-- The left table
+FROM retirement_info
+-- the right table
+LEFT JOIN dept_emp
+-- Where tables are linked 
+ON retirement_info.emp_no = dept_emp.emp_no;
+
+SELECT ri.emp_no,
+    ri.first_name,
+ri.last_name,
+    de.to_date
+FROM retirement_info as ri
+LEFT JOIN dept_emp as de
+ON ri.emp_no = de.emp_no;
+
+SELECT ri.emp_no,
+    ri.first_name,
+    ri.last_name,
+de.to_date
+-- Create new table to hold info
+INTO current_emp
+FROM retirement_info as ri
+LEFT JOIN dept_emp as de
+ON ri.emp_no = de.emp_no
+-- Add filter for current employees
+WHERE de.to_date = ('9999-01-01');
+
+SELECT * FROM current_emp;
+
+-- Employee count by department number
+SELECT COUNT(ce.emp_no), de.dept_no
+INTO retiring_by_dept
+FROM current_emp as ce
+LEFT JOIN dept_emp as de
+ON ce.emp_no = de.emp_no
+GROUP BY de.dept_no
+ORDER BY de.dept_no;
+
+SELECT * FROM retiring_by_dept;
+
+-- 1. merge Employees with Salaries for emp_no, first and last name, gender, and salary
+SELECT e.emp_no, 
+	e.first_name, 
+	e.last_name,
+	e.gender,
+	s.salary,
+	de.to_date
+INTO emp_info
+FROM employees as e
+INNER JOIN salaries as s
+ON e.emp_no = s.emp_no
+INNER JOIN dept_emp as de
+ON e.emp_no = de.emp_no
+WHERE (e.birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+	AND (e.hire_date BETWEEN '1985-01-01' AND '1988-12-31')
+	  AND (de.to_date = '9999-01-01');
+-- 2. merge Manager with Employees for dept_no, name, man emp_no, last and first name, and starting and ending date
+SELECT dm.dept_no,
+	d.dept_name,
+	dm.emp_no,
+	ce.last_name,
+	ce.first_name,
+	dm.from_date,
+	dm.to_date
+INTO manager_info
+FROM dept_manager AS dm
+	INNER JOIN departments AS d
+		ON dm.dept_no = d.dept_no
+	INNER JOIN current_emp AS ce
+		ON dm.emp_no = ce.emp_no;
+-- 3. update current_emp by including employees dept
+SELECT ce.emp_no,
+	ce.first_name,
+	ce.last_name,
+	d.dept_name
+INTO dept_info
+FROM current_emp as ce
+	INNER JOIN dept_emp AS de
+		ON ce.emp_no = de.emp_no
+	INNER JOIN departments AS d
+		ON de.dept_no = d.dept_no;
+
+-- Sales info
+SELECT ri.emp_no,
+	ri.first_name,
+	ri.last_name,
+	d.dept_name
+INTO sales_info
+FROM retirement_info AS ri
+	INNER JOIN dept_emp AS de
+		ON ri.emp_no = de.emp_no
+	INNER JOIN departments AS d
+		ON de.dept_no = d.dept_no
+WHERE d.dept_name = 'Sales';
+
+SELECT * FROM sales_info;
+
+-- Sales and evelopment departments info
+SELECT ri.emp_no,
+	ri.first_name,
+	ri.last_name,
+	d.dept_name
+INTO sales_develop_info
+FROM retirement_info AS ri
+	INNER JOIN dept_emp AS de
+		ON ri.emp_no = de.emp_no
+	INNER JOIN departments AS d
+		ON de.dept_no = d.dept_no
+WHERE d.dept_name IN ('Sales','Development');
+
+-- retiment titles 
+SELECT e.emp_no, 
+	e.first_name, 
+	e.last_name,
+	t.title,
+	t.from_date,
+	t.to_date
+INTO retirement_titles
+FROM employees as e
+	INNER JOIN titles as t
+		ON e.emp_no = t.emp_no
+WHERE (e.birth_date BETWEEN '1952-01-01' AND '1955-12-31')
+ORDER BY e.emp_no;
